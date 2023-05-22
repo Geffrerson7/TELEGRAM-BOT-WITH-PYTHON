@@ -25,7 +25,7 @@ Go to the project directory
 Create virtual enviroment
 
 ```bash
-$(venv) virtualenv venv
+$ virtualenv venv
 ```
 
 Install dependencies
