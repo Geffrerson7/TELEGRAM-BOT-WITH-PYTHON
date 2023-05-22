@@ -3,7 +3,7 @@ import os
 from dotenv import load_dotenv
 import logging
 from telegram import Update
-from utils import get_pokemon_name
+from utils import get_pokemon_name_by_scraping
 
 load_dotenv()
 
@@ -22,7 +22,7 @@ async def hello(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 async def handle_pokemon_id(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     message_text = update.message.text  # Obtener el mensaje del usuario
     pokemon_id = message_text.strip()  # Obtener el ID del Pokémon ingresado
-    pokemon_name = get_pokemon_name(pokemon_id)  # Obtener el nombre del Pokémon
+    pokemon_name = get_pokemon_name_by_scraping(pokemon_id)  # Obtener el nombre del Pokémon
     if pokemon_name:
         link = f'https://pokemon.gameinfo.io/es/pokemon/{pokemon_id}-{pokemon_name}'
         await context.bot.send_message(chat_id=update.effective_chat.id, text=link)
