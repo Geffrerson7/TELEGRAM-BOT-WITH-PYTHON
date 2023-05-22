@@ -1,10 +1,9 @@
-from telegram.ext import CommandHandler, Application, ContextTypes
+from telegram.ext import CommandHandler, MessageHandler, Application, ContextTypes, filters
 import os
 from dotenv import load_dotenv
 import logging
 from telegram import Update
-import requests
-from bs4 import BeautifulSoup
+from utils import get_pokemon_name
 
 load_dotenv()
 
@@ -12,28 +11,31 @@ token = os.environ.get("API_KEY")
 
 # Función para manejar el comando "/start"
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    await context.bot.send_message(chat_id=update.effective_chat.id, text="¡Hola!")
+    await context.bot.send_message(chat_id=update.effective_chat.id, text="Ingrese el ID del Pokémon a buscar")
+    context.user_data['next_step'] = 'handle_pokemon_id'
 
 # Función para manejar el comando "/hello"
 async def hello(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(f'Hello {update.effective_user.first_name}')
 
-# Función para realizar el scraping y enviar los enlaces al bot
-async def scrape_pokemon(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    url = 'https://pokemon.gameinfo.io/es'
-    response = requests.get(url)
-    soup = BeautifulSoup(response.content, 'html.parser')
-    pokemon_list = soup.find('div', class_='pokemon-list').find_all('div', class_='gen')[:10]
-
-    links = []
-    for pokemon in pokemon_list:
-        pokemon_id = pokemon.find('div', class_='id').text.strip()
-        pokemon_name = pokemon.find('h2').text.strip().lower()
+# Función para manejar la respuesta del usuario con el ID del Pokémon
+async def handle_pokemon_id(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    message_text = update.message.text  # Obtener el mensaje del usuario
+    pokemon_id = message_text.strip()  # Obtener el ID del Pokémon ingresado
+    pokemon_name = get_pokemon_name(pokemon_id)  # Obtener el nombre del Pokémon (puedes implementar esta función)
+    if pokemon_name:
         link = f'https://pokemon.gameinfo.io/es/pokemon/{pokemon_id}-{pokemon_name}'
-        links.append(link)
+        await context.bot.send_message(chat_id=update.effective_chat.id, text=link)
+    else:
+        await context.bot.send_message(chat_id=update.effective_chat.id, text="No se encontró un Pokémon con ese ID")
 
-    links_text = '\n'.join(links)
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=links_text)
+# Función para manejar los mensajes del usuario
+async def handle_messages(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if 'next_step' in context.user_data:
+        next_step = context.user_data['next_step']
+        del context.user_data['next_step']
+        if next_step == 'handle_pokemon_id':
+            await handle_pokemon_id(update, context)
 
 # Configurar el bot
 def main():
@@ -45,7 +47,7 @@ def main():
 
     application.add_handler(CommandHandler('start', start))
     application.add_handler(CommandHandler('hello', hello))
-    application.add_handler(CommandHandler('scrape', scrape_pokemon))  # Manejador para el comando "/scrape"
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_messages))
 
     application.run_polling()
 
