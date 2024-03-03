@@ -26,3 +26,26 @@ def get_pokemon_name_by_scraping(pokemon_id):
         if id == pokemon_id:
             pokemon_name = pokemon.find("h2").text.strip().lower()
     return pokemon_name
+
+def pokemon_coordenadas():
+
+    url = "https://coordsgo.com/pkm90"
+    response = requests.get(url)
+    soup = BeautifulSoup(response.content, "html.parser")
+    pokemon_list = soup.find_all("div", class_="pkm")
+    names = []
+    shinies = []
+
+    for pokemon in pokemon_list:
+        info_div = pokemon.find("div", class_="info")
+        name_div = info_div.find("div", class_="name")
+        shiny = name_div.find("div", class_="shiny").text.strip()
+        name = name_div.find("div", attrs={"data-v-6e6ad457": ""}).text.strip()
+        names.append(name)
+        shinies.append(shiny)
+
+    print(shinies)
+    print(names)
+
+
+
